@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF2E4A87"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <!-- Main Winamp Player Window -->
+    <LinearLayout
+        android:id="@+id/mainPlayerWindow"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/winamp_window_background"
+        android:orientation="vertical"
+        android:padding="4dp">
+
+        <!-- Title Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/winamp_title_bar"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="WINAMP"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_minimize" />
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_close" />
+
+        </LinearLayout>
+
+        <!-- Main Display Area -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#FF000000"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Track Info Display -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="★"
+                    android:textColor="#FF00FF00"
+                    android:textSize="18sp"
+                    android:layout_marginEnd="12dp" />
+
+                <TextView
+                    android:id="@+id/tvTrackNumber"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1."
+                    android:textColor="#FF00FF00"
+                    android:textSize="18sp"
+                    android:fontFamily="monospace"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:id="@+id/tvFileName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="DJ MIKE LLAMA - LLAMA WHIPPIN' INTRO"
+                    android:textColor="#FF00FF00"
+                    android:textSize="18sp"
+                    android:fontFamily="monospace"
+                    android:singleLine="true"
+                    android:ellipsize="marquee"
+                    android:marqueeRepeatLimit="marquee_forever"
+                    android:scrollHorizontally="true" />
+
+            </LinearLayout>
+
+            <!-- Bitrate and Format Info -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="320 kbps"
+                    android:textColor="#FF00FF00"
+                    android:textSize="14sp"
+                    android:fontFamily="monospace"
+                    android:layout_marginEnd="20dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="44 kHz"
+                    android:textColor="#FF00FF00"
+                    android:textSize="14sp"
+                    android:fontFamily="monospace"
+                    android:layout_marginEnd="20dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="stereo"
+                    android:textColor="#FF00FF00"
+                    android:textSize="14sp"
+                    android:fontFamily="monospace"
+                    android:gravity="end" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+
+
+        <!-- Control Buttons Row -->
+        <!-- Play Controls Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="16dp">
+
+            <ImageButton
+                android:id="@+id/btnPrevious"
+                android:layout_width="60dp"
+                android:layout_height="48dp"
+                android:background="@drawable/winamp_button_bg"
+                android:src="@drawable/ic_skip_previous"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Previous" />
+
+            <ImageButton
+                android:id="@+id/btnPlayPause"
+                android:layout_width="60dp"
+                android:layout_height="48dp"
+                android:background="@drawable/winamp_button_bg"
+                android:src="@drawable/ic_play_arrow"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Play/Pause" />
+
+            <ImageButton
+                android:id="@+id/btnStop"
+                android:layout_width="60dp"
+                android:layout_height="48dp"
+                android:background="@drawable/winamp_button_bg"
+                android:src="@drawable/ic_stop"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Stop" />
+
+            <ImageButton
+                android:id="@+id/btnNext"
+                android:layout_width="60dp"
+                android:layout_height="48dp"
+                android:background="@drawable/winamp_button_bg"
+                android:src="@drawable/ic_skip_next"
+                android:contentDescription="Next" />
+
+        </LinearLayout>
+
+        <!-- Mode Buttons Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/btnEQ"
+                android:layout_width="48dp"
+                android:layout_height="36dp"
+                android:background="@drawable/winamp_small_button_bg"
+                android:drawableTop="@drawable/ic_add_file"
+                android:text="ADD"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:padding="2dp"
+                android:layout_marginEnd="8dp" />
+
+
+
+        </LinearLayout>
+
+        <!-- Bottom Control Panel -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/btnRewind"
+                android:layout_width="48dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/winamp_small_button_bg"
+                android:drawableTop="@drawable/ic_fast_rewind"
+                android:padding="4dp" />
+
+            <Button
+                android:id="@+id/btnForward"
+                android:layout_width="48dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/winamp_small_button_bg"
+                android:drawableTop="@drawable/ic_fast_forward"
+                android:padding="4dp" />
+
+            <Button
+                android:id="@+id/btnEject"
+                android:layout_width="48dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/winamp_small_button_bg"
+                android:drawableTop="@drawable/ic_eject"
+                android:padding="4dp" />
+
+            <Button
+                android:id="@+id/btnShuffle"
+                android:layout_width="48dp"
+                android:layout_height="36dp"
+                android:background="@drawable/winamp_small_button_bg"
+                android:drawableTop="@drawable/ic_shuffle"
+                android:padding="4dp" />
+
+        </LinearLayout>
+
+        <!-- Volume Control Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/winamp_display_bg"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="VOL"
+                android:textColor="#00FF00"
+                android:textSize="14sp"
+                android:layout_marginEnd="8dp" />
+
+            <SeekBar
+                android:id="@+id/seekVolume"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="100"
+                android:progress="50"
+                android:layout_marginEnd="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BAL"
+                android:textColor="#00FF00"
+                android:textSize="14sp"
+                android:layout_marginEnd="8dp" />
+
+            <SeekBar
+                android:id="@+id/seekBalance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="100"
+                android:progress="50" />
+
+        </LinearLayout>
+
+        <!-- Track Library Window -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:background="@drawable/winamp_display_bg"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="TRACK LIBRARY"
+                android:textColor="#00FF00"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:background="@drawable/winamp_button_bg"
+                android:padding="4dp"
+                android:layout_marginBottom="8dp" />
+
+            <ListView
+                android:id="@+id/trackListView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="#000000"
+                android:divider="#333333"
+                android:dividerHeight="1dp"
+                android:choiceMode="singleChoice"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

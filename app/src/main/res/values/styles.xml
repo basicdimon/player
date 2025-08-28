@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Winamp style button -->
+    <style name="PlayerControlButton">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:background">@drawable/winamp_button_bg</item>
+        <item name="android:scaleType">centerInside</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:tint">@color/winamp_green</item>
+    </style>
+
+    <!-- Winamp style text -->
+    <style name="WinampText">
+        <item name="android:textColor">@color/winamp_text</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Winamp style secondary text -->
+    <style name="WinampTextSecondary">
+        <item name="android:textColor">@color/winamp_text_secondary</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- Winamp style display -->
+    <style name="WinampDisplay">
+        <item name="android:background">@color/winamp_display_bg</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:textColor">@color/winamp_green</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>
