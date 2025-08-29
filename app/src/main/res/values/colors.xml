@@ -31,4 +31,15 @@
     <color name="player_text_primary">#FF00FF00</color>
     <color name="player_text_secondary">#FF80FF80</color>
     <color name="control_background">#FF404040</color>
+    
+    <!-- Blue highlight colors for buttons -->
+    <color name="blue_button_bg">#FF000000</color>
+    <color name="blue_button_pressed">#FF1A1A1A</color>
+    <color name="blue_button_border">#FF0066FF</color>
+    <color name="blue_icon_tint">#FF0066FF</color>
+    
+    <!-- SeekBar colors -->
+    <color name="seekbar_progress">#FF0066FF</color>
+    <color name="seekbar_thumb">#FF0066FF</color>
+    <color name="seekbar_background">#FF333333</color>
 </resources>

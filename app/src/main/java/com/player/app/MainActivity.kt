@@ -1,10 +1,12 @@
 package com.player.app
 
 import android.Manifest
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -13,6 +15,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -45,17 +48,38 @@ class MainActivity : AppCompatActivity() {
     private lateinit var currentTimeText: TextView
     private lateinit var totalTimeText: TextView
     private lateinit var trackListView: ListView
-    // private lateinit var seekBar: SeekBar // Removed with equalizer
+    private lateinit var seekBarProgress: SeekBar
     private lateinit var previousButton: ImageButton
     private lateinit var playPauseButton: ImageButton
+    private lateinit var stopButton: ImageButton
     private lateinit var nextButton: ImageButton
+    private lateinit var rewindButton: Button
+    private lateinit var forwardButton: Button
+    private lateinit var shuffleButton: Button
     private lateinit var volumeSeekBar: SeekBar
     private lateinit var audioManager: AudioManager
+    private lateinit var bitrateText: TextView
+    private lateinit var frequencyText: TextView
+    private lateinit var channelsText: TextView
     
     // Список треков в библиотеке
     private val trackLibrary = mutableListOf<Track>()
     private var currentTrackIndex = -1
+    
+    // Режим случайного воспроизведения
+    private var isShuffleEnabled = false
+    private val shuffledIndices = mutableListOf<Int>()
     private lateinit var trackAdapter: ArrayAdapter<String>
+    
+    // Режимы повтора
+    private enum class RepeatMode {
+        OFF,        // Без повтора
+        ONE,        // Повтор одного трека
+        ALL         // Повтор всего плейлиста
+    }
+    
+    private var currentRepeatMode = RepeatMode.OFF
+    private lateinit var repeatButton: Button
     
     // Лаунчер для выбора одного файла
     private val filePickerLauncher = registerForActivityResult(
@@ -135,13 +159,22 @@ class MainActivity : AppCompatActivity() {
     private fun initializeViews() {
         fileNameText = findViewById(R.id.tvFileName)
         selectFileButton = findViewById(R.id.btnEQ) // Temporary using EQ button
-        currentTimeText = findViewById(R.id.tvTrackNumber) // Temporary using track number
-        totalTimeText = findViewById(R.id.tvTrackNumber) // Using same element for now
+        currentTimeText = findViewById(R.id.tvCurrentTime)
+        totalTimeText = findViewById(R.id.tvTotalTime)
         trackListView = findViewById(R.id.trackListView)
+        seekBarProgress = findViewById(R.id.seekBarProgress)
         volumeSeekBar = findViewById(R.id.seekVolume)
+        bitrateText = findViewById(R.id.tvBitrate)
+        frequencyText = findViewById(R.id.tvFrequency)
+        channelsText = findViewById(R.id.tvChannels)
         previousButton = findViewById(R.id.btnPrevious)
         playPauseButton = findViewById(R.id.btnPlayPause)
+        stopButton = findViewById(R.id.btnStop)
         nextButton = findViewById(R.id.btnNext)
+        rewindButton = findViewById(R.id.btnRewind)
+        forwardButton = findViewById(R.id.btnForward)
+        shuffleButton = findViewById(R.id.btnShuffle)
+        repeatButton = findViewById(R.id.btnRepeat)
         
         // Инициализация AudioManager
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -149,6 +182,10 @@ class MainActivity : AppCompatActivity() {
         // Инициализация адаптера для списка треков
         trackAdapter = ArrayAdapter(this, R.layout.track_list_item, mutableListOf<String>())
         trackListView.adapter = trackAdapter
+        
+        // Инициализация состояния кнопок
+        updateRepeatButton()
+        updateShuffleButton()
     }
     
     private fun initializePlayer() {
@@ -157,12 +194,24 @@ class MainActivity : AppCompatActivity() {
         exoPlayer?.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 updatePlayPauseButton()
+                
+                // Обновляем информацию о треке когда плеер готов
+                if (playbackState == Player.STATE_READY) {
+                    updateTrackInfo()
+                }
+                
+                // Обработка окончания трека
+                if (playbackState == Player.STATE_ENDED) {
+                    handleTrackEnded()
+                }
             }
             
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 updatePlayPauseButton()
                 if (isPlaying) {
                     startProgressUpdate()
+                    updateTrackInfo()
+                    animateTimeDisplay()
                 }
             }
         })
@@ -174,21 +223,67 @@ class MainActivity : AppCompatActivity() {
         }
         
         playPauseButton.setOnClickListener {
+            animateButtonPress(it)
             togglePlayPause()
         }
         
         previousButton.setOnClickListener {
+            animateButtonPress(it)
             playPreviousTrack()
         }
         
         nextButton.setOnClickListener {
+            animateButtonPress(it)
             playNextTrack()
+        }
+        
+        stopButton.setOnClickListener {
+            animateButtonPress(it)
+            stopPlayback()
+        }
+        
+        rewindButton.setOnClickListener {
+            animateButtonPress(it)
+            seekBackward()
+        }
+        
+        forwardButton.setOnClickListener {
+            animateButtonPress(it)
+            seekForward()
+        }
+        
+        shuffleButton.setOnClickListener {
+            animateButtonPress(it)
+            toggleShuffleMode()
+        }
+        
+        repeatButton.setOnClickListener {
+            animateButtonPress(it)
+            toggleRepeatMode()
         }
         
         // Обработчик кликов по элементам списка треков
         trackListView.setOnItemClickListener { _, _, position, _ ->
             loadTrack(position)
         }
+        
+        // Обработчик навигации по треку
+        seekBarProgress.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    exoPlayer?.let { player ->
+                        val duration = player.duration
+                        if (duration > 0) {
+                            val newPosition = (duration * progress / 100).toLong()
+                            player.seekTo(newPosition)
+                        }
+                    }
+                }
+            }
+            
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
         
         // Обработчик изменения громкости
         setupVolumeControl()
@@ -310,10 +405,24 @@ class MainActivity : AppCompatActivity() {
         )
     }
     
+    private fun stopPlayback() {
+        exoPlayer?.let { player ->
+            player.stop()
+            player.seekTo(0)
+            updatePlayPauseButton()
+            // Остановить обновление прогресса
+            updateProgressAction?.let { handler.removeCallbacks(it) }
+            // Сбросить отображение времени
+            currentTimeText.text = "00:00"
+            seekBarProgress.progress = 0
+        }
+    }
+    
     private fun seekBackward() {
         exoPlayer?.let { player ->
             val newPosition = (player.currentPosition - 10000).coerceAtLeast(0)
             player.seekTo(newPosition)
+            updatePlayPauseButton()
         }
     }
     
@@ -321,6 +430,7 @@ class MainActivity : AppCompatActivity() {
         exoPlayer?.let { player ->
             val newPosition = (player.currentPosition + 10000).coerceAtMost(player.duration)
             player.seekTo(newPosition)
+            updatePlayPauseButton()
         }
     }
     
@@ -339,7 +449,9 @@ class MainActivity : AppCompatActivity() {
                         val currentPosition = player.currentPosition
                         val duration = player.duration
                         
-                        // SeekBar updates removed with equalizer
+                        // Обновление SeekBar прогресса
+                        val progress = ((currentPosition * 100) / duration).toInt()
+                        seekBarProgress.progress = progress
                         
                         currentTimeText.text = formatTime(currentPosition)
                         totalTimeText.text = formatTime(duration)
@@ -390,6 +502,8 @@ class MainActivity : AppCompatActivity() {
         if (trackLibrary.size == 1) {
             currentTrackIndex = 0
             loadTrack(0)
+            // Дополнительно обновляем информацию о треке
+            handler.postDelayed({ updateTrackInfo() }, 500)
         }
     }
     
@@ -412,6 +526,9 @@ class MainActivity : AppCompatActivity() {
             
             fileNameText.text = track.name
             
+            // Обновляем информацию о качестве звука
+            updateTrackInfo()
+            
             // Выделяем текущий трек в списке
             trackListView.setSelection(index)
         }
@@ -420,7 +537,18 @@ class MainActivity : AppCompatActivity() {
     // Переключение на следующий трек
     private fun playNextTrack() {
         if (trackLibrary.isNotEmpty()) {
-            val nextIndex = (currentTrackIndex + 1) % trackLibrary.size
+            val nextIndex = if (isShuffleEnabled && shuffledIndices.isNotEmpty()) {
+                // В режиме shuffle используем перемешанный список
+                val currentShuffleIndex = shuffledIndices.indexOf(currentTrackIndex)
+                if (currentShuffleIndex != -1 && currentShuffleIndex < shuffledIndices.size - 1) {
+                    shuffledIndices[currentShuffleIndex + 1]
+                } else {
+                    shuffledIndices[0] // Возвращаемся к началу перемешанного списка
+                }
+            } else {
+                // Обычный режим
+                (currentTrackIndex + 1) % trackLibrary.size
+            }
             loadTrack(nextIndex)
             exoPlayer?.play()
         }
@@ -429,10 +557,199 @@ class MainActivity : AppCompatActivity() {
     // Переключение на предыдущий трек
     private fun playPreviousTrack() {
         if (trackLibrary.isNotEmpty()) {
-            val prevIndex = if (currentTrackIndex > 0) currentTrackIndex - 1 else trackLibrary.size - 1
+            val prevIndex = if (isShuffleEnabled && shuffledIndices.isNotEmpty()) {
+                // В режиме shuffle используем перемешанный список
+                val currentShuffleIndex = shuffledIndices.indexOf(currentTrackIndex)
+                if (currentShuffleIndex != -1 && currentShuffleIndex > 0) {
+                    shuffledIndices[currentShuffleIndex - 1]
+                } else {
+                    shuffledIndices[shuffledIndices.size - 1] // Переходим к концу перемешанного списка
+                }
+            } else {
+                // Обычный режим
+                if (currentTrackIndex > 0) currentTrackIndex - 1 else trackLibrary.size - 1
+            }
             loadTrack(prevIndex)
             exoPlayer?.play()
         }
+    }
+    
+    // Переключение режима повтора
+    private fun toggleRepeatMode() {
+        currentRepeatMode = when (currentRepeatMode) {
+            RepeatMode.OFF -> RepeatMode.ONE
+            RepeatMode.ONE -> RepeatMode.ALL
+            RepeatMode.ALL -> RepeatMode.OFF
+        }
+        updateRepeatButton()
+    }
+    
+    // Переключение режима случайного воспроизведения
+    private fun toggleShuffleMode() {
+        isShuffleEnabled = !isShuffleEnabled
+        updateShuffleButton()
+        
+        if (isShuffleEnabled) {
+            // Создаем перемешанный список индексов
+            shuffledIndices.clear()
+            shuffledIndices.addAll(trackLibrary.indices.shuffled())
+        } else {
+            shuffledIndices.clear()
+        }
+    }
+    
+    // Обновление текста кнопки повтора
+    private fun updateRepeatButton() {
+        val text = when (currentRepeatMode) {
+            RepeatMode.OFF -> "OFF"
+            RepeatMode.ONE -> "1"
+            RepeatMode.ALL -> "ALL"
+        }
+        repeatButton.text = text
+    }
+    
+    // Обновление текста кнопки shuffle
+    private fun updateShuffleButton() {
+        val text = if (isShuffleEnabled) "ON" else "OFF"
+        shuffleButton.text = text
+    }
+    
+    // Обработка окончания трека
+    private fun handleTrackEnded() {
+        when (currentRepeatMode) {
+            RepeatMode.OFF -> {
+                // Переход к следующему треку, если есть
+                if (isShuffleEnabled && shuffledIndices.isNotEmpty()) {
+                    // В shuffle режиме проверяем, не последний ли это трек в перемешанном списке
+                    val currentShuffleIndex = shuffledIndices.indexOf(currentTrackIndex)
+                    if (currentShuffleIndex != -1 && currentShuffleIndex < shuffledIndices.size - 1) {
+                        playNextTrack()
+                    }
+                } else {
+                    // В обычном режиме
+                    if (currentTrackIndex < trackLibrary.size - 1) {
+                        playNextTrack()
+                    }
+                }
+            }
+            RepeatMode.ONE -> {
+                // Повтор текущего трека
+                exoPlayer?.seekTo(0)
+                exoPlayer?.play()
+            }
+            RepeatMode.ALL -> {
+                // Переход к следующему треку или к первому, если это последний
+                playNextTrack()
+            }
+        }
+    }
+    
+    // Обновление информации о треке
+    private fun updateTrackInfo() {
+        if (currentTrackIndex >= 0 && currentTrackIndex < trackLibrary.size) {
+            val currentTrack = trackLibrary[currentTrackIndex]
+            val retriever = MediaMetadataRetriever()
+            
+            try {
+                retriever.setDataSource(this, currentTrack.uri)
+                
+                // Получаем битрейт
+                val bitrateStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
+                val bitrate = if (bitrateStr != null) {
+                    val bitrateInt = bitrateStr.toIntOrNull() ?: 0
+                    if (bitrateInt > 0) {
+                        "${bitrateInt / 1000} kbps"
+                    } else {
+                        "--- kbps"
+                    }
+                } else {
+                    "--- kbps"
+                }
+                bitrateText.text = bitrate
+                
+                // Получаем частоту дискретизации (не всегда доступна через MediaMetadataRetriever)
+                // Попробуем получить из ExoPlayer
+                val format = exoPlayer?.audioFormat
+                val sampleRate = if (format != null && format.sampleRate != -1) {
+                    "${format.sampleRate / 1000} kHz"
+                } else {
+                    "44 kHz" // Значение по умолчанию
+                }
+                frequencyText.text = sampleRate
+                
+                // Получаем количество каналов
+                val format2 = exoPlayer?.audioFormat
+                val channels = if (format2 != null && format2.channelCount > 0) {
+                    when (format2.channelCount) {
+                        1 -> "mono"
+                        2 -> "stereo"
+                        else -> "${format2.channelCount}ch"
+                    }
+                } else {
+                    "stereo" // Значение по умолчанию
+                }
+                channelsText.text = channels
+                
+            } catch (e: Exception) {
+                android.util.Log.e("AudioInfo", "Error getting metadata: ${e.message}")
+                // Значения по умолчанию при ошибке
+                bitrateText.text = "--- kbps"
+                frequencyText.text = "-- kHz"
+                channelsText.text = "---"
+            } finally {
+                try {
+                    retriever.release()
+                } catch (e: Exception) {
+                    android.util.Log.e("AudioInfo", "Error releasing retriever: ${e.message}")
+                }
+            }
+        } else {
+            // Если трек не выбран
+            bitrateText.text = "--- kbps"
+            frequencyText.text = "-- kHz"
+            channelsText.text = "---"
+        }
+    }
+    
+    // Анимация нажатия кнопки
+    private fun animateButtonPress(view: View) {
+        val scaleDown = ObjectAnimator.ofFloat(view, "scaleX", 1.0f, 0.9f)
+        scaleDown.duration = 100
+        scaleDown.interpolator = AccelerateDecelerateInterpolator()
+        
+        val scaleUp = ObjectAnimator.ofFloat(view, "scaleX", 0.9f, 1.0f)
+        scaleUp.duration = 100
+        scaleUp.interpolator = AccelerateDecelerateInterpolator()
+        
+        val scaleDownY = ObjectAnimator.ofFloat(view, "scaleY", 1.0f, 0.9f)
+        scaleDownY.duration = 100
+        scaleDownY.interpolator = AccelerateDecelerateInterpolator()
+        
+        val scaleUpY = ObjectAnimator.ofFloat(view, "scaleY", 0.9f, 1.0f)
+        scaleUpY.duration = 100
+        scaleUpY.interpolator = AccelerateDecelerateInterpolator()
+        
+        scaleDown.start()
+        scaleDownY.start()
+        
+        scaleDown.addListener(object : android.animation.Animator.AnimatorListener {
+            override fun onAnimationStart(animation: android.animation.Animator) {}
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                scaleUp.start()
+                scaleUpY.start()
+            }
+            override fun onAnimationCancel(animation: android.animation.Animator) {}
+            override fun onAnimationRepeat(animation: android.animation.Animator) {}
+        })
+    }
+    
+    // Анимация пульсации для времени воспроизведения
+    private fun animateTimeDisplay() {
+        val pulse = ObjectAnimator.ofFloat(currentTimeText, "alpha", 1.0f, 0.7f, 1.0f)
+        pulse.duration = 1000
+        pulse.repeatCount = ObjectAnimator.INFINITE
+        pulse.interpolator = AccelerateDecelerateInterpolator()
+        pulse.start()
     }
     
     // Получение имени файла из URI
